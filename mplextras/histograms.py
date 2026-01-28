@@ -51,7 +51,3 @@ def hist(data, time=None, norm=True, errors=False, **kwargs):
         ax.errorbar(
             0.5 * (x[1:] + x[:-1]), n*weight, yerr=err, fmt='none', ecolor=color
         )
-
-    
-
-
