@@ -22,8 +22,8 @@ pip install -e .
 ```
 if you want to edit and develope your own mpl-extra function.
 
-# Getting Started 👨‍💻
-Run the simple example:
+## Getting Started 👨‍💻
+Run the simple [example](example.py):
 ```bash
 python example.py
 ```
