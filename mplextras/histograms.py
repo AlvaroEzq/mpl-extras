@@ -48,6 +48,9 @@ def hist(data, time=None, norm=True, errors=False, **kwargs):
     _n, __x, patches = ax.hist(data, weights=weights, **kwargs)
     color = patches[0].get_edgecolor()
     if errors:
-        ax.errorbar(
+        err_container = ax.errorbar(
             0.5 * (x[1:] + x[:-1]), n*weight, yerr=err, fmt='none', ecolor=color
         )
+    
+    return (_n, __x, patches), err_container if errors else None
+
