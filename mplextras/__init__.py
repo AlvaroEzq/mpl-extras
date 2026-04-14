@@ -1,2 +1,2 @@
 # mplextras/__init__.py
-from .histograms import hist, sumhist
+from .histograms import hist, sumhist, diffhist

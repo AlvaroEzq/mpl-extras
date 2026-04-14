@@ -113,3 +113,79 @@ def sumhist(data_list, times=None, norm=True, errors=False, **kwargs):
         )
 
     return (_n, __x, patches), err_container if errors else None
+
+def diffhist(data1, data2, time1=None, time2=None, norm=True, errors=False, **kwargs):
+    """
+    Plots the difference between histograms with identical binning:
+        hist(data1) - sum(hist(d) for d in data2)
+    - data2: array-like or list of array-like datasets to subtract.
+    - time1/time2: if provided, normalize each histogram independently to counts per unit time.
+      For multiple datasets in data2, time2 can be a scalar or a list with matching length.
+    - norm: if True, normalize to counts per unit x (bin width).
+    - errors: if True, add propagated Poisson errors.
+    """
+
+    data2_list = list(data2) if isinstance(data2, (list, tuple)) else [data2]
+    if len(data2_list) == 0:
+        raise ValueError('data2 must contain at least one dataset')
+
+    if time2 is None:
+        time2_list = [None] * len(data2_list)
+    elif np.isscalar(time2):
+        time2_list = [time2] * len(data2_list)
+    else:
+        time2_list = list(time2)
+        if len(time2_list) != len(data2_list):
+            raise ValueError('time2 must be a scalar or a list with same length as data2')
+
+    dummy_fig = matplotlib.figure.Figure()
+    dummy_ax = matplotlib.axes.Axes(dummy_fig, (0,0,0,0))
+    kwargs_bins = kwargs.get('bins', None)
+    kwargs_range = kwargs.get('range', None)
+    ns, x, _ = dummy_ax.hist([data1] + data2_list, bins=kwargs_bins, range=kwargs_range)
+    del dummy_ax, dummy_fig
+
+    n1 = ns[0]
+    n2_list = ns[1:]
+    width = x[1] - x[0]
+
+    def _get_weight(time_value):
+        w = 1.0
+        if time_value is not None:
+            if time_value != 0:
+                w /= time_value
+            else:
+                w = 0.0
+        if norm:
+            w /= width
+        return w
+
+    w1 = _get_weight(time1)
+    w2_list = [_get_weight(t) for t in time2_list]
+
+    all_data = [data1] + data2_list
+    all_weights = [np.ones_like(data1, dtype=float) * w1]
+    for d2, w2 in zip(data2_list, w2_list):
+        all_weights.append(np.ones_like(d2, dtype=float) * (-w2))
+    data = np.concatenate(all_data)
+    weights = np.concatenate(all_weights)
+
+    err = None
+    if errors:
+        err2_sum = np.zeros_like(n1, dtype=float)
+        for n2, w2 in zip(n2_list, w2_list):
+            err2_sum += (np.sqrt(n2) * w2) ** 2
+        err = np.sqrt((np.sqrt(n1) * w1) ** 2 + err2_sum)
+
+    if 'histtype' not in kwargs:
+        kwargs['histtype'] = 'step'
+
+    ax = plt.gca()
+    _n, __x, patches = ax.hist(data, weights=weights, **kwargs)
+    color = patches[0].get_edgecolor()
+    if errors:
+        err_container = ax.errorbar(
+            0.5 * (x[1:] + x[:-1]), _n, yerr=err, fmt='none', ecolor=color
+        )
+
+    return (_n, __x, patches), err_container if errors else None
