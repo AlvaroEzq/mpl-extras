@@ -48,11 +48,11 @@ def hist(data, time=None, norm=True, errors=False, **kwargs):
     _n, __x, patches = ax.hist(data, weights=weights, **kwargs)
     color = patches[0].get_edgecolor()
     if errors:
-        err_container = ax.errorbar(
+        ax.errorbar(
             0.5 * (x[1:] + x[:-1]), n*weight, yerr=err, fmt='none', ecolor=color
         )
     
-    return (_n, __x, patches), err_container if errors else None
+    return (_n, __x, patches), err if errors else None
 
 
 def sumhist(data_list, times=None, norm=True, errors=False, **kwargs):
@@ -108,11 +108,11 @@ def sumhist(data_list, times=None, norm=True, errors=False, **kwargs):
     _n, __x, patches = ax.hist(data, weights=concat_weights, **kwargs)
     color = patches[0].get_edgecolor()
     if errors:
-        err_container = ax.errorbar(
+        ax.errorbar(
             0.5 * (x[1:] + x[:-1]), _n, yerr=err, fmt='none', ecolor=color
         )
 
-    return (_n, __x, patches), err_container if errors else None
+    return (_n, __x, patches), err if errors else None
 
 def diffhist(data1, data2, time1=None, time2=None, norm=True, errors=False, **kwargs):
     """
@@ -184,8 +184,8 @@ def diffhist(data1, data2, time1=None, time2=None, norm=True, errors=False, **kw
     _n, __x, patches = ax.hist(data, weights=weights, **kwargs)
     color = patches[0].get_edgecolor()
     if errors:
-        err_container = ax.errorbar(
+        ax.errorbar(
             0.5 * (x[1:] + x[:-1]), _n, yerr=err, fmt='none', ecolor=color
         )
 
-    return (_n, __x, patches), err_container if errors else None
+    return (_n, __x, patches), err if errors else None
