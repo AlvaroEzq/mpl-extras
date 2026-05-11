@@ -3,7 +3,7 @@ import matplotlib
 import numpy as np
 
 
-def hist(data, time=None, norm=True, errors=False, **kwargs):
+def hist(data, time=None, norm=True, errors=False, fillalpha=None, **kwargs):
     """
     Adds options to plot histograms with matplotlib.pyplot.hist:
     - time: if provided, normalizes the histogram to counts per unit time.
@@ -40,13 +40,49 @@ def hist(data, time=None, norm=True, errors=False, **kwargs):
         if norm:
             err /= width
     
+    # Parse the color for fillalpha application and histtype adjustment
+    facecolor = None
+    edgecolor = None
+    no_color_given = False
+    if fillalpha is not None:
+        # set alpha of the given facecolor by the user
+        if 'facecolor' in kwargs or 'facecolors' in kwargs:
+            facecolor = matplotlib.colors.to_rgba(kwargs.get('facecolor') or kwargs.get('facecolors'), fillalpha)
+            kwargs['facecolor'] = facecolor
+            if 'color' in kwargs: # move the color to the edgecolor to avoid overriden the facecolor
+                edgecolor = kwargs['color'] # keep the color priority as in matplotlib behaviour
+                kwargs['edgecolor'] = edgecolor
+                kwargs.pop('color', None)
+        # if no facecolor is given, use the color or edgecolor as the facecolor to apply the alpha
+        elif 'color' in kwargs or 'edgecolor' in kwargs or 'edgecolors' in kwargs:
+            edgecolor = kwargs.get('color') or kwargs.get('edgecolor') or kwargs.get('edgecolors')
+            facecolor = matplotlib.colors.to_rgba(edgecolor, fillalpha)
+            kwargs['facecolor'] = facecolor
+            kwargs['edgecolor'] = edgecolor
+            kwargs.pop('color', None)
+        else:
+            no_color_given = True
+
+    # set the default histtype
     if 'histtype' not in kwargs:
-        kwargs['histtype'] = 'step'
-    
+        if fillalpha is None:
+            kwargs['histtype'] = 'step' # default to 'step'
+        else:
+            kwargs['histtype'] = 'stepfilled' # default to 'stepfilled' if fillalpha is provided
+    elif kwargs['histtype'] == 'step' and fillalpha is not None:
+        raise ValueError("Cannot use fillalpha with histtype='step'. Use histtype='stepfilled' instead.")
+
     # plot the histogram
     ax = plt.gca()
     _n, __x, patches = ax.hist(data, weights=weights, **kwargs)
     color = patches[0].get_edgecolor()
+    if no_color_given and fillalpha is not None:
+        color = patches[0].get_facecolor() # I dont know why but when no color is given, the edgecolor is set to (0, 0, 0, 0)
+        facecolor = matplotlib.colors.to_rgba(color, fillalpha)
+        for p in patches:
+            p.set_edgecolor(color)
+            p.set_facecolor(facecolor)
+
     if errors:
         ax.errorbar(
             0.5 * (x[1:] + x[:-1]), n*weight, yerr=err, fmt='none', ecolor=color
@@ -55,7 +91,7 @@ def hist(data, time=None, norm=True, errors=False, **kwargs):
     return (_n, __x, patches), err if errors else None
 
 
-def sumhist(data_list, times=None, norm=True, errors=False, **kwargs):
+def sumhist(data_list, times=None, norm=True, errors=False, fillalpha=None, **kwargs):
     """
     Plots the sum of several histograms (with the same binning) with different times.
     - data_list: list of data arrays to be histogrammed and summed.
@@ -100,13 +136,49 @@ def sumhist(data_list, times=None, norm=True, errors=False, **kwargs):
                 err.append(np.zeros_like(n))
         err = np.sqrt(np.sum(np.array(err)**2, axis=0))
 
+    # Parse the color for fillalpha application and histtype adjustment
+    facecolor = None
+    edgecolor = None
+    no_color_given = False
+    if fillalpha is not None:
+        # set alpha of the given facecolor by the user
+        if 'facecolor' in kwargs or 'facecolors' in kwargs:
+            facecolor = matplotlib.colors.to_rgba(kwargs.get('facecolor') or kwargs.get('facecolors'), fillalpha)
+            kwargs['facecolor'] = facecolor
+            if 'color' in kwargs: # move the color to the edgecolor to avoid overriden the facecolor
+                edgecolor = kwargs['color'] # keep the color priority as in matplotlib behaviour
+                kwargs['edgecolor'] = edgecolor
+                kwargs.pop('color', None)
+        # if no facecolor is given, use the color or edgecolor as the facecolor to apply the alpha
+        elif 'color' in kwargs or 'edgecolor' in kwargs or 'edgecolors' in kwargs:
+            edgecolor = kwargs.get('color') or kwargs.get('edgecolor') or kwargs.get('edgecolors')
+            facecolor = matplotlib.colors.to_rgba(edgecolor, fillalpha)
+            kwargs['facecolor'] = facecolor
+            kwargs['edgecolor'] = edgecolor
+            kwargs.pop('color', None)
+        else:
+            no_color_given = True
+
+    # set the default histtype
     if 'histtype' not in kwargs:
-        kwargs['histtype'] = 'step'
+        if fillalpha is None:
+            kwargs['histtype'] = 'step' # default to 'step'
+        else:
+            kwargs['histtype'] = 'stepfilled' # default to 'stepfilled' if fillalpha is provided
+    elif kwargs['histtype'] == 'step' and fillalpha is not None:
+        raise ValueError("Cannot use fillalpha with histtype='step'. Use histtype='stepfilled' instead.")
     
     #plot
     ax = plt.gca()
     _n, __x, patches = ax.hist(data, weights=concat_weights, **kwargs)
     color = patches[0].get_edgecolor()
+    if no_color_given and fillalpha is not None:
+        color = patches[0].get_facecolor() # I dont know why but when no color is given, the edgecolor is set to (0, 0, 0, 0)
+        facecolor = matplotlib.colors.to_rgba(color, fillalpha)
+        for p in patches:
+            p.set_edgecolor(color)
+            p.set_facecolor(facecolor)
+
     if errors:
         ax.errorbar(
             0.5 * (x[1:] + x[:-1]), _n, yerr=err, fmt='none', ecolor=color
@@ -114,7 +186,7 @@ def sumhist(data_list, times=None, norm=True, errors=False, **kwargs):
 
     return (_n, __x, patches), err if errors else None
 
-def diffhist(data1, data2, time1=None, time2=None, norm=True, errors=False, **kwargs):
+def diffhist(data1, data2, time1=None, time2=None, norm=True, errors=False, fillalpha=None, **kwargs):
     """
     Plots the difference between histograms with identical binning:
         hist(data1) - sum(hist(d) for d in data2)
@@ -177,12 +249,48 @@ def diffhist(data1, data2, time1=None, time2=None, norm=True, errors=False, **kw
             err2_sum += (np.sqrt(n2) * w2) ** 2
         err = np.sqrt((np.sqrt(n1) * w1) ** 2 + err2_sum)
 
+    # Parse the color for fillalpha application and histtype adjustment
+    facecolor = None
+    edgecolor = None
+    no_color_given = False
+    if fillalpha is not None:
+        # set alpha of the given facecolor by the user
+        if 'facecolor' in kwargs or 'facecolors' in kwargs:
+            facecolor = matplotlib.colors.to_rgba(kwargs.get('facecolor') or kwargs.get('facecolors'), fillalpha)
+            kwargs['facecolor'] = facecolor
+            if 'color' in kwargs: # move the color to the edgecolor to avoid overriden the facecolor
+                edgecolor = kwargs['color'] # keep the color priority as in matplotlib behaviour
+                kwargs['edgecolor'] = edgecolor
+                kwargs.pop('color', None)
+        # if no facecolor is given, use the color or edgecolor as the facecolor to apply the alpha
+        elif 'color' in kwargs or 'edgecolor' in kwargs or 'edgecolors' in kwargs:
+            edgecolor = kwargs.get('color') or kwargs.get('edgecolor') or kwargs.get('edgecolors')
+            facecolor = matplotlib.colors.to_rgba(edgecolor, fillalpha)
+            kwargs['facecolor'] = facecolor
+            kwargs['edgecolor'] = edgecolor
+            kwargs.pop('color', None)
+        else:
+            no_color_given = True
+
+    # set the default histtype
     if 'histtype' not in kwargs:
-        kwargs['histtype'] = 'step'
+        if fillalpha is None:
+            kwargs['histtype'] = 'step' # default to 'step'
+        else:
+            kwargs['histtype'] = 'stepfilled' # default to 'stepfilled' if fillalpha is provided
+    elif kwargs['histtype'] == 'step' and fillalpha is not None:
+        raise ValueError("Cannot use fillalpha with histtype='step'. Use histtype='stepfilled' instead.")
 
     ax = plt.gca()
     _n, __x, patches = ax.hist(data, weights=weights, **kwargs)
     color = patches[0].get_edgecolor()
+    if no_color_given and fillalpha is not None:
+        color = patches[0].get_facecolor() # I dont know why but when no color is given, the edgecolor is set to (0, 0, 0, 0)
+        facecolor = matplotlib.colors.to_rgba(color, fillalpha)
+        for p in patches:
+            p.set_edgecolor(color)
+            p.set_facecolor(facecolor)
+
     if errors:
         ax.errorbar(
             0.5 * (x[1:] + x[:-1]), _n, yerr=err, fmt='none', ecolor=color
