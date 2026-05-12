@@ -9,6 +9,8 @@ def hist(data, time=None, norm=True, errors=False, fillalpha=None, **kwargs):
     - time: if provided, normalizes the histogram to counts per unit time.
     - norm: if True, normalizes the histogram to counts per unit x (bin width).
     - errors: if True, adds error bars assuming Poisson statistics.
+    - fillalpha: if provided, sets the alpha of the histogram fill (face) color. If no facecolor is given,
+                it uses the edgecolor or color to apply the alpha.
     """
 
     dummy_fig = matplotlib.figure.Figure()
@@ -98,6 +100,8 @@ def sumhist(data_list, times=None, norm=True, errors=False, fillalpha=None, **kw
     - times: list of times for each dataset. If provided, normalizes each histogram to counts per unit time before summing.
     - norm: if True, normalizes the histogram to counts per unit x (bin width).
     - errors: if True, adds error bars assuming Poisson statistics.
+    - fillalpha: if provided, sets the alpha of the histogram fill (face) color. If no facecolor is given,
+                it uses the edgecolor or color to apply the alpha.
     """
 
     dummy_fig = matplotlib.figure.Figure()
@@ -195,6 +199,8 @@ def diffhist(data1, data2, time1=None, time2=None, norm=True, errors=False, fill
       For multiple datasets in data2, time2 can be a scalar or a list with matching length.
     - norm: if True, normalize to counts per unit x (bin width).
     - errors: if True, add propagated Poisson errors.
+    - fillalpha: if provided, sets the alpha of the histogram fill (face) color. If no facecolor is given,
+                it uses the edgecolor or color to apply the alpha.
     """
 
     data2_list = list(data2) if isinstance(data2, (list, tuple)) else [data2]
