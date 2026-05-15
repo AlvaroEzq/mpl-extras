@@ -3,11 +3,11 @@ import matplotlib
 import numpy as np
 
 
-def hist(data, time=None, norm=True, errors=False, fillalpha=None, **kwargs):
+def hist(data, time=None, binscaling=True, errors=False, fillalpha=None, **kwargs):
     """
     Adds options to plot histograms with matplotlib.pyplot.hist:
     - time: if provided, normalizes the histogram to counts per unit time.
-    - norm: if True, normalizes the histogram to counts per unit x (bin width).
+    - binscaling: if True, normalizes the histogram to counts per unit x (bin width).
     - errors: if True, adds error bars assuming Poisson statistics.
     - fillalpha: if provided, sets the alpha of the histogram fill (face) color. If no facecolor is given,
                 it uses the edgecolor or color to apply the alpha.
@@ -28,7 +28,7 @@ def hist(data, time=None, norm=True, errors=False, fillalpha=None, **kwargs):
     weight = 1.0
     if time:
         weight /= time
-    if norm:
+    if binscaling:
         weight /= width
     weights = np.ones_like(data) * weight
     
@@ -39,7 +39,7 @@ def hist(data, time=None, norm=True, errors=False, fillalpha=None, **kwargs):
             err = np.sqrt(n) / time
         else:
             err = np.sqrt(n)
-        if norm:
+        if binscaling:
             err /= width
     
     # Parse the color for fillalpha application and histtype adjustment
@@ -93,12 +93,12 @@ def hist(data, time=None, norm=True, errors=False, fillalpha=None, **kwargs):
     return (_n, __x, patches), err if errors else None
 
 
-def sumhist(data_list, times=None, norm=True, errors=False, fillalpha=None, **kwargs):
+def sumhist(data_list, times=None, binscaling=True, errors=False, fillalpha=None, **kwargs):
     """
     Plots the sum of several histograms (with the same binning) with different times.
     - data_list: list of data arrays to be histogrammed and summed.
     - times: list of times for each dataset. If provided, normalizes each histogram to counts per unit time before summing.
-    - norm: if True, normalizes the histogram to counts per unit x (bin width).
+    - binscaling: if True, normalizes the histogram to counts per unit x (bin width).
     - errors: if True, adds error bars assuming Poisson statistics.
     - fillalpha: if provided, sets the alpha of the histogram fill (face) color. If no facecolor is given,
                 it uses the edgecolor or color to apply the alpha.
@@ -122,7 +122,7 @@ def sumhist(data_list, times=None, norm=True, errors=False, fillalpha=None, **kw
     weight_list = np.ones_like(times) * 1.0
     if times:
         weight_list /= times
-    if norm:
+    if binscaling:
         weight_list /= width
     
     weights = []
@@ -190,14 +190,14 @@ def sumhist(data_list, times=None, norm=True, errors=False, fillalpha=None, **kw
 
     return (_n, __x, patches), err if errors else None
 
-def diffhist(data1, data2, time1=None, time2=None, norm=True, errors=False, fillalpha=None, **kwargs):
+def diffhist(data1, data2, time1=None, time2=None, binscaling=True, errors=False, fillalpha=None, **kwargs):
     """
     Plots the difference between histograms with identical binning:
         hist(data1) - sum(hist(d) for d in data2)
     - data2: array-like or list of array-like datasets to subtract.
     - time1/time2: if provided, normalize each histogram independently to counts per unit time.
       For multiple datasets in data2, time2 can be a scalar or a list with matching length.
-    - norm: if True, normalize to counts per unit x (bin width).
+    - binscaling: if True, normalize to counts per unit x (bin width).
     - errors: if True, add propagated Poisson errors.
     - fillalpha: if provided, sets the alpha of the histogram fill (face) color. If no facecolor is given,
                 it uses the edgecolor or color to apply the alpha.
@@ -234,7 +234,7 @@ def diffhist(data1, data2, time1=None, time2=None, norm=True, errors=False, fill
                 w /= time_value
             else:
                 w = 0.0
-        if norm:
+        if binscaling:
             w /= width
         return w
 
