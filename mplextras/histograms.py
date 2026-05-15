@@ -303,3 +303,38 @@ def diffhist(data1, data2, time1=None, time2=None, binscaling=True, errors=False
         )
 
     return (_n, __x, patches), err if errors else None
+
+def hist2d(dataX, dataY, time=None, binscaling=True, **kwargs):
+    """
+    Plots a 2D histogram with options for time normalization and x/y normalization.
+    - time: if provided, normalizes the histogram to counts per unit time.
+    - binscaling: if True, normalizes the histogram to counts per unit x and y (bin surface).
+    """
+
+    dummy_fig = matplotlib.figure.Figure()
+    dummy_ax = matplotlib.axes.Axes(dummy_fig, (0,0,0,0))
+    n, xedges, yedges, _ = dummy_ax.hist2d(dataX, dataY, **kwargs)
+    del dummy_ax, dummy_fig
+
+    # get the width of each bin in x and y
+    xwidth = xedges[1] - xedges[0]
+    ywidth = yedges[1] - yedges[0]
+
+    # calculate the weights
+    weight = 1.0
+    if time:
+        weight /= time
+    if binscaling:
+        weight /= (xwidth * ywidth)
+
+    weights = np.ones_like(dataX) * weight
+
+    if 'cmin' not in kwargs:
+        kwargs['cmin'] = np.nextafter(0, 1) # avoid plotting empty bins
+
+    # plot the histogram
+    ax = plt.gca()
+    _n, __xedges, __yedges, im = ax.hist2d(dataX, dataY, weights=weights, **kwargs)
+    plt.sci(im) # set the current image for colorbar to work correctly
+
+    return _n, __xedges, __yedges, im
