@@ -340,21 +340,6 @@ def hist2d(dataX, dataY, time=None, binscaling=True, cbarinfo="mean", cbarlabel=
     if 'cmin' not in kwargs:
         kwargs['cmin'] = np.nextafter(0, 1) # avoid plotting empty bins
 
-    cmap = kwargs.get('cmap', plt.get_cmap())
-    if isinstance(cmap, str):
-        cmap = plt.get_cmap(cmap)
-    mean_n = np.nanmean(n * weight)
-    norm = kwargs.get('norm')
-    if norm is None:
-        norm = matplotlib.colors.Normalize(vmin=np.nanmin(n * weight), vmax=np.nanmax(n * weight))
-    marginal_color = matplotlib.colors.to_rgba(cmap(norm(mean_n)), 1)
-
-    marginal_kwargs = {
-        key: value for key, value in kwargs.items()
-        if key not in {'bins', 'range', 'cmap', 'norm', 'vmin', 'vmax', 'cmin', 'cmax'}
-    }
-    #marginal_kwargs['histtype'] = 'bar'
-
     # plot the histogram
     ax = plt.gca()
     ax_top = None
@@ -372,6 +357,19 @@ def hist2d(dataX, dataY, time=None, binscaling=True, cbarinfo="mean", cbarlabel=
     plt.sci(im) # set the current image for colorbar to work correctly
 
     if marginals:
+        # use as color of the marginals hist the color corresponding to the mean count value across all bins in the 2D histogram
+        cmap = kwargs.get('cmap', plt.get_cmap())
+        if isinstance(cmap, str):
+            cmap = plt.get_cmap(cmap)
+        mean_n = np.nanmean(n * weight)
+        normcolor = im.norm
+        marginal_color = matplotlib.colors.to_rgba(cmap(normcolor(mean_n)), 1)
+
+        marginal_kwargs = {
+            key: value for key, value in kwargs.items()
+            if key not in {'bins', 'range', 'cmap', 'norm', 'vmin', 'vmax', 'cmin', 'cmax'}
+        }
+
         plt.sca(ax_top)
         hist(dataX, time=time, bins=xedges, color=marginal_color, fillalpha=0.25, **marginal_kwargs)
         plt.sca(ax_right)
@@ -419,7 +417,6 @@ def hist2d(dataX, dataY, time=None, binscaling=True, cbarinfo="mean", cbarlabel=
                     pass # if the box is plotted, the errorbar would be redundant, so we skip it to avoid cluttering the colorbar
 
             if "errorbar2" in cbarinfo or plot_both_errorbar:
-                print("Plotting errorbar2")
                 if not box_plotted:
                     cbar.ax.errorbar([0.5], [mean_n], yerr=2*std_n, fmt='none', ecolor='white', label='Std', capsize=0, lw=1)
                 else:
