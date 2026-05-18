@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def hist(data, time=None, binscaling=True, errors=False, fillalpha=None, **kwargs):
@@ -304,11 +305,12 @@ def diffhist(data1, data2, time1=None, time2=None, binscaling=True, errors=False
 
     return (_n, __x, patches), err if errors else None
 
-def hist2d(dataX, dataY, time=None, binscaling=True, cbarinfo="mean", cbarlabel="", **kwargs):
+def hist2d(dataX, dataY, time=None, binscaling=True, cbarinfo="mean", cbarlabel="", marginals=False, **kwargs):
     """
     Plots a 2D histogram with options for time normalization and x/y normalization.
     - time: if provided, normalizes the histogram to counts per unit time.
     - binscaling: if True, normalizes the histogram to counts per unit x and y (bin surface).
+    - marginals: if True, adds marginal histograms on top (X) and right (Y).
     - cbarinfo: if provided, adds visual indicators to the colorbar. Can be a combination of:
         "mean": a horizontal line at the mean count value across all bins.
         "box": a box spanning one standard deviation around the mean.
@@ -333,22 +335,70 @@ def hist2d(dataX, dataY, time=None, binscaling=True, cbarinfo="mean", cbarlabel=
     if binscaling:
         weight /= (xwidth * ywidth)
 
-    weights = np.ones_like(dataX) * weight
+    weights = np.ones_like(dataX, dtype=float) * weight
 
     if 'cmin' not in kwargs:
         kwargs['cmin'] = np.nextafter(0, 1) # avoid plotting empty bins
 
+    cmap = kwargs.get('cmap', plt.get_cmap())
+    if isinstance(cmap, str):
+        cmap = plt.get_cmap(cmap)
+    mean_n = np.nanmean(n * weight)
+    norm = kwargs.get('norm')
+    if norm is None:
+        norm = matplotlib.colors.Normalize(vmin=np.nanmin(n * weight), vmax=np.nanmax(n * weight))
+    marginal_color = matplotlib.colors.to_rgba(cmap(norm(mean_n)), 1)
+
+    marginal_kwargs = {
+        key: value for key, value in kwargs.items()
+        if key not in {'bins', 'range', 'cmap', 'norm', 'vmin', 'vmax', 'cmin', 'cmax'}
+    }
+    #marginal_kwargs['histtype'] = 'bar'
+
     # plot the histogram
     ax = plt.gca()
+    ax_top = None
+    ax_right = None
+    if marginals:
+        divider = make_axes_locatable(ax)
+        ax_top = divider.append_axes('top', size='25%', pad=0.0, sharex=ax)
+        ax_right = divider.append_axes('right', size='25%', pad=0.0, sharey=ax)
+        ax.set_zorder(3)
+        ax_top.set_zorder(1)
+        ax_right.set_zorder(1)
+
     _n, __xedges, __yedges, im = ax.hist2d(dataX, dataY, weights=weights, **kwargs)
+    plt.sca(ax)
     plt.sci(im) # set the current image for colorbar to work correctly
+
+    if marginals:
+        plt.sca(ax_top)
+        hist(dataX, time=time, bins=xedges, color=marginal_color, fillalpha=0.25, **marginal_kwargs)
+        plt.sca(ax_right)
+        hist(dataY, time=time, bins=yedges, color=marginal_color, fillalpha=0.25, orientation='horizontal', **marginal_kwargs)
+        plt.sca(ax) # restore the current axis to the main one
+        #ax_top.hist(dataX, bins=xedges, weights=top_weights, color=marginal_color, **marginal_kwargs)
+        #ax_right.hist(dataY, bins=yedges, weights=right_weights, orientation='horizontal', color=marginal_color, **marginal_kwargs)
+        ax_top.set_xlim(ax.get_xlim())
+        ax_right.set_ylim(ax.get_ylim())
+        ax_top.set_facecolor('none')
+        ax_right.set_facecolor('none')
+        ax_top.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labeltop=False, labelleft=False, labelright=False, length=0)
+        ax_right.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labeltop=False, labelleft=False, labelright=False, length=0)
+        for spine in ax_top.spines.values():
+            spine.set_visible(False)
+        for spine in ax_right.spines.values():
+            spine.set_visible(False)
 
     if cbarinfo or cbarlabel:
         # mean of all bins (flatten the 2D histogram to 1D and remove nans)
         mean_n = np.nanmean(_n.flatten())
         std_n = np.nanstd(_n.flatten())
 
-        cbar = plt.colorbar(im, label=cbarlabel)
+        if marginals:
+            cbar = plt.colorbar(im, ax=ax, label=cbarlabel)
+        else:
+            cbar = plt.colorbar(im, label=cbarlabel)
         if "mean" in cbarinfo:
             cbar.ax.plot([0.05, 0.95], [mean_n, mean_n], color='white')
 
