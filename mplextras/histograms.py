@@ -304,11 +304,17 @@ def diffhist(data1, data2, time1=None, time2=None, binscaling=True, errors=False
 
     return (_n, __x, patches), err if errors else None
 
-def hist2d(dataX, dataY, time=None, binscaling=True, **kwargs):
+def hist2d(dataX, dataY, time=None, binscaling=True, cbarinfo="mean", cbarlabel="", **kwargs):
     """
     Plots a 2D histogram with options for time normalization and x/y normalization.
     - time: if provided, normalizes the histogram to counts per unit time.
     - binscaling: if True, normalizes the histogram to counts per unit x and y (bin surface).
+    - cbarinfo: if provided, adds visual indicators to the colorbar. Can be a combination of:
+        "mean": a horizontal line at the mean count value across all bins.
+        "box": a box spanning one standard deviation around the mean.
+        "errorbar": error bars representing the standard deviation (can be split into "errorbar1"
+                    for 1 std and "errorbar2" for 2 std).
+    - cbarlabel: label for the colorbar.
     """
 
     dummy_fig = matplotlib.figure.Figure()
@@ -336,5 +342,41 @@ def hist2d(dataX, dataY, time=None, binscaling=True, **kwargs):
     ax = plt.gca()
     _n, __xedges, __yedges, im = ax.hist2d(dataX, dataY, weights=weights, **kwargs)
     plt.sci(im) # set the current image for colorbar to work correctly
+
+    if cbarinfo or cbarlabel:
+        # mean of all bins (flatten the 2D histogram to 1D and remove nans)
+        mean_n = np.nanmean(_n.flatten())
+        std_n = np.nanstd(_n.flatten())
+
+        cbar = plt.colorbar(im, label=cbarlabel)
+        if "mean" in cbarinfo:
+            cbar.ax.plot([0.05, 0.95], [mean_n, mean_n], color='white')
+
+        box_plotted = False
+        if "box" in cbarinfo:
+            box_plotted = True
+            std_box = plt.Rectangle((0.25, mean_n - std_n), 0.5, 2 * std_n, fill=False, edgecolor='white')
+            cbar.ax.add_patch(std_box)
+
+        if "errorbar" in cbarinfo:
+            plot_both_errorbar = False
+            if not "errorbar1" in cbarinfo and not "errorbar2" in cbarinfo:
+                plot_both_errorbar = True
+            if "errorbar1" in cbarinfo or plot_both_errorbar:
+                if not box_plotted:
+                    cbar.ax.errorbar([0.5], [mean_n], yerr=std_n, fmt='none', ecolor='white', label='Std', capsize=3, lw=2)
+                else:
+                    pass # if the box is plotted, the errorbar would be redundant, so we skip it to avoid cluttering the colorbar
+
+            if "errorbar2" in cbarinfo or plot_both_errorbar:
+                print("Plotting errorbar2")
+                if not box_plotted:
+                    cbar.ax.errorbar([0.5], [mean_n], yerr=2*std_n, fmt='none', ecolor='white', label='Std', capsize=0, lw=1)
+                else:
+                    # plot only from 1std to 2std to avoid cluttering the colorbar with the errorbar that would be redundant with the box
+                    cbar.ax.errorbar([0.5], [mean_n + std_n], yerr=np.array([[0], [std_n]]), fmt='none', ecolor='white', label='Std', capsize=0, lw=1)
+                    cbar.ax.errorbar([0.5], [mean_n - std_n], yerr=np.array([[std_n], [0]]), fmt='none', ecolor='white', label='Std', capsize=0, lw=1)
+
+        plt.sca(ax) # restore the current axis
 
     return _n, __xedges, __yedges, im
