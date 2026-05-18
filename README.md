@@ -9,6 +9,7 @@ data2 = numpy.random.normal( 1, 1, 5000)
 [<img align="center" height="350" src="docs/mpl_vs_mplextras.png">](docs/mpl_vs_mplextras.png)
 
 Or you can easily add marginals to 2d histograms
+
 [<img align="center" height="350" src="docs/hist2d.png">](docs/hist2d.png)
 
 ## Installation ⚙️
