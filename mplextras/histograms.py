@@ -426,4 +426,4 @@ def hist2d(dataX, dataY, time=None, binscaling=True, cbarinfo="mean", cbarlabel=
 
         plt.sca(ax) # restore the current axis
 
-    return _n, __xedges, __yedges, im
+    return (_n, __xedges, __yedges), im
