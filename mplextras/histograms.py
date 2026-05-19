@@ -389,9 +389,9 @@ def hist2d(dataX, dataY, time=None, binscaling=True, cbarinfo="mean", cbarlabel=
             spine.set_visible(False)
 
     if cbarinfo or cbarlabel:
-        # mean of all bins (flatten the 2D histogram to 1D and remove nans)
-        mean_n = np.nanmean(_n.flatten())
-        std_n = np.nanstd(_n.flatten())
+        # mean of all bins (flatten the 2D histogram to 1D and consider nans as 0's)
+        mean_n = np.mean(np.nan_to_num(_n.flatten(), nan=0.0))
+        std_n = np.std(np.nan_to_num(_n.flatten(), nan=0.0))
 
         if marginals:
             cbar = plt.colorbar(im, ax=ax, label=cbarlabel)
