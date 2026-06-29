@@ -88,7 +88,7 @@ def hist(data, time=None, binscaling=True, errors=False, fillalpha=None, **kwarg
 
     if errors:
         ax.errorbar(
-            0.5 * (x[1:] + x[:-1]), n*weight, yerr=err, fmt='none', ecolor=color
+            0.5 * (__x[1:] + __x[:-1]), _n, yerr=err, fmt='none', ecolor=color
         )
     
     return (_n, __x, patches), err if errors else None
@@ -186,7 +186,7 @@ def sumhist(data_list, times=None, binscaling=True, errors=False, fillalpha=None
 
     if errors:
         ax.errorbar(
-            0.5 * (x[1:] + x[:-1]), _n, yerr=err, fmt='none', ecolor=color
+            0.5 * (__x[1:] + __x[:-1]), _n, yerr=err, fmt='none', ecolor=color
         )
 
     return (_n, __x, patches), err if errors else None
